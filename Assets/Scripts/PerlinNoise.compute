@@ -1,0 +1,51 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+
+int xPixels;
+float scale;
+
+float2 random(float2 pos)
+{
+   return frac(sin(dot(pos ,float2(12.9898,78.233)*2.0)) * 43758.5453);
+}
+
+float Cuerp(float v0, float v1, float v2, float v3, float x)
+{
+    float P = (v3 - v2) - (v0 - v1);
+	float Q = (v0 - v1) - P;
+	float R = v2 - v0;
+	float S = v1;
+
+	return ((P * x) * (P * x) * (P * x)) + ((Q * x) * (Q * x)) + (R * x) + S;
+}
+float2 perlinNoise(float x, float y)
+{
+    float x0 = (int)x;
+    float x1 = (int)x + 1;
+    float y0 = (int)y;
+    float y1 = (int)y + 1;
+
+    float2 dir00 = random(float2(x0,y0));
+    float2 dir01 = random(float2(x0,y1));
+    float2 dir10 = random(float2(x1,y0));
+    float2 dir11 = random(float2(x1,y1));
+
+    return float2(dir00.x,dir01.y);
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float x = id.x  * scale / xPixels;
+    float y = id.y  * scale / xPixels;
+    Result[id.xy] = float4(
+        perlinNoise(id.x,id.y).x, 
+        perlinNoise(id.x,id.y).y, 
+        0, 
+        1
+    );
+}
